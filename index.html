@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ritual Divination</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Michroma&family=Inter:wght@400;600;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --neon: #00ff88;
+            --neon-glow: rgba(0, 255, 136, 0.6);
+            --neon-dim: rgba(0, 255, 136, 0.15);
+            --dark-space: #010203;
+            --panel-bg: rgba(1, 2, 3, 0.6);
+            --border-glow: rgba(0, 255, 136, 0.2);
+        }
+
+        /* --- СТИЛИ ИНТРО --- */
+        #ritual-intro {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: #000;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            transition: opacity 1.5s ease-out;
+        }
+
+        #intro-canvas {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+        }
+
+        .intro-title {
+            font-family: 'Orbitron', sans-serif;
+            color: #fff;
+            font-size: 42px;
+            letter-spacing: 15px;
+            text-transform: uppercase;
+            z-index: 10000;
+            opacity: 0;
+            transform: scale(0.8);
+            animation: fadeInOut 3.5s forwards;
+            text-shadow: 0 0 20px rgba(255,255,255,0.5);
+            text-align: center;
+        }
+
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: scale(0.8); filter: blur(10px); }
+            30% { opacity: 1; transform: scale(1); filter: blur(0px); }
+            70% { opacity: 1; transform: scale(1.05); filter: blur(0px); }
+            100% { opacity: 0; transform: scale(1.1); filter: blur(5px); }
+        }
+
+        body.intro-active { overflow: hidden; }
+
+        /* --- ОСНОВНОЙ ИНТЕРФЕЙС --- */
+        body { 
+            margin: 0; font-family: 'Inter', sans-serif; 
+            background: var(--dark-space); color: white;
+            display: flex; flex-direction: column; min-height: 100vh; overflow-x: hidden;
+        }
+
+        #galaxy-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; }
+
+        nav {
+            width: 100%; display: flex; justify-content: space-between;
+            align-items: center; padding: 40px 60px 20px 60px; box-sizing: border-box;
+        }
+        .brand-section { display: flex; align-items: center; gap: 20px; }
+        .logo-box img { height: 45px; filter: drop-shadow(0 0 15px var(--neon)); }
+        .title-group h1 { font-family: 'Orbitron', sans-serif; margin: 0; font-size: 28px; text-transform: uppercase; color: var(--neon); letter-spacing: 3px; }
+        .author { font-family: 'Michroma', sans-serif; font-size: 9px; color: rgba(255,255,255,0.3); margin-bottom: 5px; letter-spacing: 1px; }
+
+        .btn-wallet {
+            font-family: 'Orbitron', sans-serif; border: 2px solid var(--neon);
+            background: transparent; color: var(--neon); padding: 10px 24px;
+            border-radius: 4px; font-size: 11px; font-weight: 900; cursor: pointer; transition: 0.3s;
+            text-transform: uppercase; letter-spacing: 1px;
+        }
+        .btn-wallet:hover { background: var(--neon); color: #000; box-shadow: 0 0 25px var(--neon); }
+
+        .header-line { width: 100%; height: 1px; background: linear-gradient(90deg, transparent, var(--neon), transparent); margin-bottom: 30px; opacity: 0.4; }
+
+        /* --- ТРЕХБЛОЧНЫЙ ТЕРМИНАЛ (GRID СТРУКТУРА) --- */
+        .terminal-grid {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1fr 1.2fr 1fr;
+            gap: 30px;
+            padding: 0 60px 40px 60px;
+            box-sizing: border-box;
+            max-width: 1800px;
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        /* Карточки шагов */
+        .step-panel {
+            background: var(--panel-bg);
+            border: 1px solid var(--border-glow);
+            border-radius: 8px;
+            padding: 30px;
+            box-sizing: border-box;
+            backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            transition: border-color 0.4s ease, box-shadow 0.4s ease, transform 0.3s ease;
+        }
+
+        .step-panel:hover {
+            border-color: var(--neon);
+            box-shadow: 0 0 35px var(--neon-glow), inset 0 0 15px rgba(0, 255, 136, 0.1);
+            transform: translateY(-2px);
+        }
+
+        /* Заголовок шагов на английском по центру */
+        .step-header-center {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 16px;
+            font-weight: 900;
+            color: var(--neon);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            text-align: center;
+            margin-bottom: 10px;
+            width: 100%;
+        }
+
+        .step-divider {
+            width: 40%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--border-glow), transparent);
+            margin: 0 auto 25px auto;
+        }
+
+        /* --- ЛЕВЫЙ БЛОК: STEP 1 --- */
+        .panel-initiate {
+            justify-content: flex-start;
+        }
+
+        /* Опустили текст заголовка пониже */
+        .oracle-title-box {
+            text-align: center;
+            margin-top: 80px; 
+            margin-bottom: 40px;
+        }
+
+        .oracle-title-box h2 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 24px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin: 0;
+            line-height: 1.5;
+        }
+
+        .action-zone {
+            margin-top: auto;
+            margin-bottom: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+            width: 100%;
+        }
+
+        .btn-main-action {
+            font-family: 'Orbitron', sans-serif; 
+            padding: 20px 30px;
+            background: transparent; 
+            color: var(--neon); 
+            border: 2px solid var(--neon); 
+            border-radius: 6px;
+            font-size: 15px; 
+            font-weight: 900; 
+            text-transform: uppercase; 
+            cursor: pointer; 
+            transition: 0.4s ease;
+            letter-spacing: 2px;
+            animation: neonPulse 2s infinite ease-in-out;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .btn-main-action:hover { 
+            background: var(--neon); 
+            color: #000; 
+            box-shadow: 0 0 35px var(--neon);
+            transform: translateY(-2px);
+            animation: none;
+        }
+
+        .btn-main-action:disabled {
+            border-color: #333;
+            color: #555;
+            cursor: not-allowed;
+            animation: none;
+            box-shadow: none;
+        }
+
+        .mystery-slogan {
+            font-family: 'Inter', sans-serif;
+            font-size: 11px;
+            font-style: italic;
+            color: rgba(0, 255, 136, 0.7);
+            text-align: center;
+            line-height: 1.6;
+            padding: 0 10px;
+            box-sizing: border-box;
+            letter-spacing: 0.5px;
+            text-shadow: 0 0 10px rgba(0, 255, 136, 0.2);
+        }
+
+        @keyframes neonPulse {
+            0%, 100% { box-shadow: 0 0 10px rgba(0, 255, 136, 0.2); text-shadow: 0 0 5px rgba(0, 255, 136, 0.2); }
+            50% { box-shadow: 0 0 25px rgba(0, 255, 136, 0.5); text-shadow: 0 0 10px rgba(0, 255, 136, 0.6); }
+        }
+
+        /* --- ЦЕНТРАЛЬНЫЙ БЛОК: STEP 2 --- */
+        .panel-oracle {
+            justify-content: flex-start;
+        }
+
+        .oracle-altar {
+            flex: 1;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            min-height: 300px;
+        }
+
+        .oracle-art {
+            position: relative;
+            width: 500px;
+            height: 500px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            perspective: 600px;
+            transition: transform 0.3s, filter 0.5s ease;
+        }
+
+        .oracle-cat-gif {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            transition: all 0.5s ease;
+            filter: drop-shadow(0 0 10px rgba(0, 255, 136, 0.1));
+        }
+
+        .oracle-art.overdrive { 
+            filter: brightness(1.2); 
+        }
+        
+        .oracle-art.overdrive .oracle-cat-gif {
+            transform: scale(1.1);
+            filter: drop-shadow(0 0 35px var(--neon-glow));
+        }
+
+        /* --- ПРАВЫЙ БЛОК: STEP 3 --- */
+        .panel-manifest {
+            justify-content: flex-start;
+        }
+
+        .terminal-screen {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+            padding: 25px;
+            font-family: 'Inter', sans-serif;
+            font-size: 15px;
+            line-height: 1.8;
+            color: rgba(255, 255, 255, 0.9);
+            overflow-y: auto;
+            position: relative;
+            word-wrap: break-word;
+        }
+
+        .screen-placeholder {
+            font-family: 'Orbitron', sans-serif;
+            text-align: center;
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90%;
+            text-transform: uppercase;
+        }
+
+        .waiting-text {
+            color: var(--neon);
+            font-size: 14px;
+            letter-spacing: 2px;
+            font-weight: 700;
+            text-shadow: 0 0 10px rgba(0, 255, 136, 0.2);
+            display: inline-block;
+        }
+
+        .dot {
+            display: inline-block;
+            animation: dotWave 1.4s infinite linear;
+        }
+
+        .dot:nth-child(1) { animation-delay: 0s; }
+        .dot:nth-child(2) { animation-delay: 0.2s; }
+        .dot:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes dotWave {
+            0%, 100% { opacity: 0; }
+            50% { opacity: 1; }
+        }
+
+        .prediction-text {
+            display: none;
+            color: #fff;
+            border-left: 3px solid var(--neon);
+            padding-left: 20px;
+        }
+
+        .prediction-text .prefix-tag {
+            color: var(--neon);
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            font-size: 13px;
+            letter-spacing: 2px;
+            display: block;
+            margin-bottom: 12px;
+            text-shadow: 0 0 10px rgba(0, 255, 136, 0.3);
+        }
+
+        .prediction-text .message-body {
+            color: #e0e5e8;
+            font-family: 'Inter', sans-serif;
+            font-weight: 400;
+        }
+
+        /* --- ПОДВАЛ --- */
+        .footer-line { width: 30%; height: 1px; background: linear-gradient(90deg, transparent, var(--neon), transparent); margin: auto auto 0 auto; opacity: 0.3; }
+        footer { 
+            width: 100%; padding: 20px 0 30px 0; display: flex; justify-content: center; align-items: center; 
+            font-size: 10px; font-family: 'Michroma'; color: #444; gap: 15px; 
+        }
+        footer a { color: #444; text-decoration: none; transition: 0.3s; }
+        footer a:hover { color: var(--neon); text-shadow: 0 0 8px var(--neon); }
+    </style>
+</head>
+<body class="intro-active">
+
+    <div id="ritual-intro">
+        <canvas id="intro-canvas"></canvas>
+        <div class="intro-title">Ritual Divination</div>
+    </div>
+
+    <canvas id="galaxy-canvas"></canvas>
+
+    <nav>
+        <div class="brand-section">
+            <div class="logo-box"><img src="logo.png" alt="Ritual"></div>
+            <div class="title-group">
+                <div class="author">by tembi4kiNN</div>
+                <h1>Ritual Divination</h1>
+            </div>
+        </div>
+        <button class="btn-wallet" id="wallet-connect-btn">Connect Wallet</button>
+    </nav>
+
+    <div class="header-line"></div>
+
+    <main class="terminal-grid">
+        
+        <section class="step-panel panel-initiate">
+            <div class="step-header-center">Step 1</div>
+            <div class="step-divider"></div>
+            
+            <div class="oracle-title-box">
+                <h2>Glimpse Into Your Web3 Future</h2>
+            </div>
+            
+            <div class="action-zone">
+                <button class="btn-main-action" id="action-btn">Reveal My Prediction</button>
+                <div class="mystery-slogan" id="slogan-node">
+                    "Believe in your predictions, and they will definitely come true"
+                </div>
+            </div>
+        </section>
+
+        <section class="step-panel panel-oracle">
+            <div class="step-header-center">Step 2</div>
+            <div class="step-divider"></div>
+            
+            <div class="oracle-altar">
+                <div class="oracle-art" id="oracle-interactive-art">
+                    <img src="cat.gif" alt="Oracle Cat" class="oracle-cat-gif" id="oracle-cat-node">
+                </div>
+            </div>
+        </section>
+
+        <section class="step-panel panel-manifest">
+            <div class="step-header-center">Step 3</div>
+            <div class="step-divider"></div>
+            
+            <div class="terminal-screen" id="terminal-screen-node">
+                <div class="screen-placeholder" id="placeholder-node">
+                    <div class="waiting-text">
+                        WAITING FOR RITUAL INITIATION<span class="dot">.</span><span class="dot">.</span><span class="dot">.</span>
+                    </div>
+                </div>
+                <div class="prediction-text" id="prediction-text-node"></div>
+            </div>
+        </section>
+
+    </main>
+
+    <div class="footer-line"></div>
+    <footer>
+        <a href="https://docs.ritualfoundation.org/" target="_blank">Docs</a> | 
+        <a href="https://www.ritualfoundation.org/" target="_blank">Ritual Foundation</a> | 
+        <a href="https://x.com/ritualnet" target="_blank">X</a> | 
+        <a href="https://discord.gg/ritual-net" target="_blank">Discord</a>
+    </footer>
+
+    <script>
+        /* --- АДРЕС ДЛЯ ПОЛУЧЕНИЯ ОПЛАТЫ --- */
+        // ВНИМАНИЕ: Замени этот адрес на свой кошелек, куда должны приходить 0.0005 RLT!
+        const DESTINATION_WALLET = "0xdCD7ca6A781303B442F07d0465194e217E2F4dB6"; 
+
+        /* --- СОСТОЯНИЕ WEB3 КОШЕЛЬКА --- */
+        let userWalletAddress = null;
+
+        const walletConnectBtn = document.getElementById('wallet-connect-btn');
+
+        // Функция проверки и подключения кошелька
+        async function connectWallet() {
+            if (typeof window.ethereum !== 'undefined') {
+                try {
+                    walletConnectBtn.innerText = "Connecting...";
+                    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                    userWalletAddress = accounts[0];
+                    
+                    // Форматируем отображение адреса (например: 0x1234...abcd)
+                    const shortAddress = userWalletAddress.substring(0, 6) + "..." + userWalletAddress.substring(userWalletAddress.length - 4);
+                    walletConnectBtn.innerText = shortAddress;
+                    return true;
+                } catch (error) {
+                    console.error("User rejected wallet connection", error);
+                    walletConnectBtn.innerText = "Connect Wallet";
+                    alert("Connection refused. Please connect MetaMask to continue.");
+                    return false;
+                }
+            } else {
+                walletConnectBtn.innerText = "Connect Wallet";
+                alert("MetaMask is not installed. Please install the extension!");
+                return false;
+            }
+        }
+
+        // Слушатель на смену аккаунтов в самом MetaMask
+        if (typeof window.ethereum !== 'undefined') {
+            window.ethereum.on('accountsChanged', (accounts) => {
+                if (accounts.length > 0) {
+                    userWalletAddress = accounts[0];
+                    const shortAddress = userWalletAddress.substring(0, 6) + "..." + userWalletAddress.substring(userWalletAddress.length - 4);
+                    walletConnectBtn.innerText = shortAddress;
+                } else {
+                    userWalletAddress = null;
+                    walletConnectBtn.innerText = "Connect Wallet";
+                }
+            });
+        }
+
+        walletConnectBtn.addEventListener('click', connectWallet);
+
+
+        /* --- СКРИПТ АНИМАЦИИ ИНТРО --- */
+        const introCanvas = document.getElementById('intro-canvas');
+        const introCtx = introCanvas.getContext('2d');
+        let introStars = [];
+        let introAnimationId;
+
+        function resizeIntro() { if (introCanvas) { introCanvas.width = window.innerWidth; introCanvas.height = window.innerHeight; } }
+        function createIntroStars() {
+            introStars = [];
+            for(let i=0; i<600; i++) {
+                introStars.push({
+                    x: Math.random() * window.innerWidth - window.innerWidth/2,
+                    y: Math.random() * window.innerHeight - window.innerHeight/2,
+                    z: Math.random() * window.innerWidth
+                });
+            }
+        }
+        function drawIntro() {
+            if (!document.getElementById('ritual-intro')) return;
+            introCtx.fillStyle = '#000'; introCtx.fillRect(0,0,introCanvas.width, introCanvas.height);
+            introCtx.save(); introCtx.translate(introCanvas.width/2, introCanvas.height/2);
+            introStars.forEach(s => {
+                s.z -= 15; if(s.z <= 0) s.z = introCanvas.width;
+                let sx = (s.x / s.z) * (introCanvas.width/2); let sy = (s.y / s.z) * (introCanvas.width/2);
+                let size = Math.max(0, (1 - s.z / introCanvas.width) * 3);
+                let opacity = Math.max(0, 1 - s.z/introCanvas.width);
+                introCtx.fillStyle = `rgba(255,255,255,${opacity})`;
+                introCtx.beginPath(); introCtx.arc(sx, sy, size, 0, Math.PI*2); introCtx.fill();
+            });
+            introCtx.restore(); introAnimationId = requestAnimationFrame(drawIntro);
+        }
+        window.addEventListener('resize', resizeIntro); resizeIntro(); createIntroStars(); drawIntro();
+        setTimeout(() => {
+            const intro = document.getElementById('ritual-intro');
+            if(intro) {
+                intro.style.opacity = '0';
+                setTimeout(() => { cancelAnimationFrame(introAnimationId); intro.remove(); document.body.classList.remove('intro-active'); }, 1500);
+            }
+        }, 2500);
+
+        /* --- СКРИПТ ФОНА ГАЛАКТИКИ --- */
+        const canvas = document.getElementById('galaxy-canvas');
+        const ctx = canvas.getContext('2d');
+        let stars = [];
+        function initStars() {
+            canvas.width = window.innerWidth; canvas.height = window.innerHeight; stars = [];
+            for (let i = 0; i < 300; i++) { stars.push({ x: Math.random()*canvas.width-canvas.width/2, y: Math.random()*canvas.height-canvas.height/2, z: Math.random()*canvas.width }); }
+        }
+        function drawStars() {
+            ctx.fillStyle = '#010203'; ctx.fillRect(0,0,canvas.width,canvas.height);
+            ctx.save(); ctx.translate(canvas.width/2, canvas.height/2);
+            stars.forEach(s => {
+                s.z -= 0.5; if(s.z<=0) s.z=canvas.width;
+                let sx = (s.x/s.z)*canvas.width/2, sy = (s.y/s.z)*canvas.width/2;
+                let opacity = Math.max(0, 1 - s.z/canvas.width);
+                ctx.fillStyle = `rgba(255,255,255,${opacity})`;
+                ctx.beginPath(); ctx.arc(sx, sy, opacity*1.2, 0, Math.PI*2); ctx.fill();
+            });
+            ctx.restore(); requestAnimationFrame(drawStars);
+        }
+        window.addEventListener('resize', initStars); initStars(); drawStars();
+
+        /* --- ТРЕКИНГ МЫШКИ (НАКЛОН КОТИКА) --- */
+        const artContainer = document.getElementById('oracle-interactive-art');
+        document.addEventListener('mousemove', (e) => {
+            if (!artContainer) return;
+            const rect = artContainer.getBoundingClientRect();
+            const artX = rect.left + rect.width / 2; const artY = rect.top + rect.height / 2;
+            const deltaX = e.clientX - artX; const deltaY = e.clientY - artY;
+            const maxMove = 10;
+            let moveX = (deltaX / window.innerWidth) * maxMove * 2; let moveY = (deltaY / window.innerHeight) * maxMove * 2;
+            artContainer.style.transform = `rotateY(${moveX * 1.2}deg) rotateX(${-moveY * 1.2}deg)`;
+        });
+
+        /* --- ЛОГИКА ВЫДАЧИ ОТВЕТОВ И ОПЛАТЫ --- */
+        const actionBtn = document.getElementById('action-btn');
+        const placeholderNode = document.getElementById('placeholder-node');
+        const predictionTextNode = document.getElementById('prediction-text-node');
+
+        const predictions = [
+            "<span class='prefix-tag'>THE RITUAL SPEAKS:</span><span class='message-body'>Today is a wonderful day to trust your instincts. A pleasant surprise is waiting for you around the corner, and a long-awaited problem will easily solve itself. Your lucky color for the week is green!</span>",
+            "<span class='prefix-tag'>THE RITUAL SPEAKS:</span><span class='message-body'>Do not rush your decisions today. Take a deep breath and look closely — a perfect opportunity is already right in front of you. Next Tuesday will bring amazing news from someone close to you.</span>",
+            "<span class='prefix-tag'>THE RITUAL SPEAKS:</span><span class='message-body'>Everything you have been working so hard for is beginning to fall into place. Stay confident and keep moving forward. Be attentive to details, and keep an eye out for the color red today — it will bring you genuine good luck!</span>",
+            "<span class='prefix-tag'>THE RITUAL SPEAKS:</span><span class='message-body'>An inspiring meeting or an unexpected conversation is coming your way very soon. It will bring fresh ideas and sincere smiles. Trust the timing of your life — everything is happening exactly as it should.</span>"
+        ];
+
+        actionBtn.addEventListener('click', async () => {
+            actionBtn.disabled = true;
+
+            // 1. Проверяем, подключен ли кошелек. Если нет — коннектим.
+            if (!userWalletAddress) {
+                const connected = await connectWallet();
+                if (!connected) {
+                    actionBtn.disabled = false;
+                    return; // Если юзер отменил подключение, останавливаем процесс
+                }
+            }
+
+            // 2. Инициируем транзакцию оплаты на 0.0005 нативной валюты сети (RLT)
+            // Конвертируем 0.0005 в Hex-формат Wei (0.0005 * 10^18 = 500000000000000 -> Hex: 0x1c6bf52634000)
+            const valueInWeiHex = "0x1c6bf52634000"; 
+
+            try {
+                actionBtn.innerText = "Processing Payment...";
+                
+                await window.ethereum.request({
+                    method: 'eth_sendTransaction',
+                    params: [
+                        {
+                            from: userWalletAddress,
+                            to: DESTINATION_WALLET,
+                            value: valueInWeiHex,
+                        },
+                    ],
+                });
+
+                // 3. ЕСЛИ ОПЛАТА ПРОШЛА УСПЕШНО — запускаем ритуал
+                actionBtn.innerText = "Initiating Ritual...";
+                artContainer.classList.add('overdrive');
+                
+                placeholderNode.style.display = 'none';
+                predictionTextNode.style.display = 'none';
+                predictionTextNode.innerHTML = '';
+
+                setTimeout(() => {
+                    artContainer.classList.remove('overdrive');
+                    
+                    const randomText = predictions[Math.floor(Math.random() * predictions.length)];
+                    predictionTextNode.style.display = 'block';
+                    
+                    typeWriterEffect(predictionTextNode, randomText, () => {
+                        actionBtn.disabled = false;
+                        actionBtn.innerText = "Try Another Attempt";
+                    });
+
+                }, 2500);
+
+            } catch (error) {
+                console.error("Payment failed or rejected", error);
+                alert("Transaction rejected or failed. Crystals demand payment!");
+                actionBtn.disabled = false;
+                actionBtn.innerText = "Reveal My Prediction";
+            }
+        });
+
+        function typeWriterEffect(element, htmlText, callback) {
+            let i = 0; element.innerHTML = "";
+            const tempDiv = document.createElement('div'); tempDiv.innerHTML = htmlText;
+            const nodes = Array.from(tempDiv.childNodes);
+            let charList = [];
+            
+            nodes.forEach(node => {
+                if (node.nodeType === Node.TEXT_NODE) {
+                    node.nodeValue.split('').forEach(c => charList.push({ type: 'char', value: c, parent: element }));
+                } else if (node.nodeType === Node.ELEMENT_NODE) {
+                    const span = document.createElement(node.tagName);
+                    Array.from(node.attributes).forEach(attr => span.setAttribute(attr.name, attr.value));
+                    element.appendChild(span);
+                    node.textContent.split('').forEach(c => charList.push({ type: 'char', value: c, parent: span }));
+                }
+            });
+
+            function type() {
+                if (i < charList.length) {
+                    charList[i].parent.innerHTML += charList[i].value; i++; setTimeout(type, 15);
+                } else { if(callback) callback(); }
+            }
+            type();
+        }
+    </script>
+</body>
+</html>
