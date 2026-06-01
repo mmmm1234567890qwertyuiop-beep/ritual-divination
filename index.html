@@ -536,21 +536,30 @@
             actionBtn.disabled = true;
 
             try {
-                // Прямой вызов ethers.js структуры, как в коде переводчика
                 const web3Provider = new ethers.providers.Web3Provider(provider);
                 const signer = web3Provider.getSigner();
 
+                // Проверяем баланс перед отправкой
+                const balance = await signer.getBalance();
+                const required = ethers.utils.parseEther(TX_AMOUNT);
+                
+                if (balance.lt(required)) {
+                    alert("Insufficient RIT balance! Please get some test tokens.");
+                    actionBtn.disabled = false;
+                    actionBtn.innerText = "Reveal My Prediction";
+                    return;
+                }
+
                 const tx = await signer.sendTransaction({
                     to: RITUAL_RECEIVER,
-                    value: ethers.utils.parseEther(TX_AMOUNT)
+                    value: required,
+                    // Добавляем ручной лимит газа, чтобы избежать ошибки UNPREDICTABLE_GAS_LIMIT
+                    gasLimit: 100000 
                 });
 
                 actionBtn.innerText = "Confirming...";
-                
-                // КРИТИЧЕСКИЙ ЭТАП: Ждем пока блокчейн подтвердит успешный майнинг блока!
                 await tx.wait(); 
 
-                // ЕСЛИ ТРАНЗАКЦИЯ ПРОШЛА УСПЕШНО -> Включаем анимацию кота
                 actionBtn.innerText = "Initiating Ritual...";
                 artContainer.classList.add('overdrive');
                 
@@ -560,7 +569,6 @@
 
                 setTimeout(() => {
                     artContainer.classList.remove('overdrive');
-                    
                     const randomText = predictions[Math.floor(Math.random() * predictions.length)];
                     predictionTextNode.style.display = 'block';
                     
@@ -568,12 +576,19 @@
                         actionBtn.disabled = false;
                         actionBtn.innerText = "Try Another Attempt";
                     });
-
                 }, 2500);
 
             } catch (error) {
-                console.error("Ошибка при оплате блокчейна:", error);
-                alert("Transaction rejected or failed. Ritual requires payment.");
+                console.error("Full error object:", error);
+                // Более понятное сообщение для пользователя
+                if (error.code === 'INSUFFICIENT_FUNDS') {
+                    alert("Error: Insufficient funds for transaction + gas.");
+                } else if (error.code === 4001) {
+                    alert("Transaction rejected by user.");
+                } else {
+                    alert("Blockchain error: " + (error.reason || "Transaction failed"));
+                }
+                
                 actionBtn.disabled = false;
                 actionBtn.innerText = "Reveal My Prediction";
                 artContainer.classList.remove('overdrive');
