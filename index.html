@@ -426,12 +426,83 @@
         <a href="https://discord.gg/ritual-net" target="_blank">Discord</a>
     </footer>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
+
     <script>
+        /* --- НАСТРОЙКИ АДРЕСА И СЕТИ --- */
+        const RITUAL_RECEIVER = "0xF2C94334bD48Bd6001617973B01EC63bE4Db6D45"; 
+        const TX_AMOUNT = "0.0005"; 
+        const RITUAL_CHAIN_ID = "1979"; 
+        
+        let userAccount = null;
+        let introAnimationId;
+
+        /* --- БЕЗОПАСНЫЙ ПОИСК METAMASK --- */
+        function findMetaMask() {
+            if (typeof window.ethereum === 'undefined') return null;
+            if (window.ethereum.providers && window.ethereum.providers.length) {
+                return window.ethereum.providers.find(p => p.isMetaMask) || window.ethereum;
+            }
+            return window.ethereum;
+        }
+
+        /* --- ФУНКЦИИ WEB3 (МЕТАМАСК) --- */
+        async function connectWallet() {
+            const provider = findMetaMask();
+            if (!provider) {
+                alert("MetaMask not found! Please install it.");
+                return false;
+            }
+            try {
+                const accounts = await provider.request({ method: 'eth_requestAccounts' });
+                userAccount = accounts[0];
+                
+                document.getElementById('wallet-connect-btn').innerText = 
+                    userAccount.substring(0, 6) + "..." + userAccount.substring(userAccount.length - 4);
+                
+                await checkAndSwitchNetwork();
+                return true;
+            } catch (err) {
+                console.error("Ошибка коннекта:", err);
+                alert("Failed to connect wallet.");
+                return false;
+            }
+        }
+
+        async function checkAndSwitchNetwork() {
+            const provider = findMetaMask();
+            if (!provider) return;
+            
+            const hexChainId = "0x" + parseInt(RITUAL_CHAIN_ID).toString(16);
+            try {
+                await provider.request({
+                    method: 'wallet_switchEthereumChain',
+                    params: [{ chainId: hexChainId }],
+                });
+            } catch (switchError) {
+                if (switchError.code === 4902) {
+                    try {
+                        await provider.request({
+                            method: 'wallet_addEthereumChain',
+                            params: [{
+                                chainId: hexChainId,
+                                chainName: 'Ritual Testnet',
+                                nativeCurrency: { name: 'Ritual', symbol: 'RIT', decimals: 18 },
+                                rpcUrls: ['https://rpc.ritualfoundation.org'],
+                                blockExplorerUrls: ['https://explorer.ritualfoundation.org']
+                            }],
+                        });
+                    } catch (addError) {
+                        console.error(addError);
+                    }
+                }
+            }
+        }
+
         /* --- СКРИПТ АНИМАЦИИ ИНТРО --- */
         const introCanvas = document.getElementById('intro-canvas');
         const introCtx = introCanvas.getContext('2d');
         let introStars = [];
-        let introAnimationId;
 
         function resizeIntro() { if (introCanvas) { introCanvas.width = window.innerWidth; introCanvas.height = window.innerHeight; } }
         function createIntroStars() {
@@ -535,34 +606,58 @@
             type();
         }
 
-        /* --- ЛОГИКА ВЫДАЧИ ПРЕДСКАЗАНИЙ БЕЗ ОПЛАТЫ --- */
-        function connectWallet() {
-            document.getElementById('wallet-connect-btn').innerText = "Connected";
-        }
+        /* --- ОПЛАТА И ВЫДАЧА ПРЕДСКАЗАНИЯ --- */
+        async function payAndPredict() {
+            const provider = findMetaMask();
+            if (!userAccount) {
+                const connected = await connectWallet();
+                if (!connected) return;
+            }
 
-        function payAndPredict() {
+            await checkAndSwitchNetwork();
+
             const actionBtn = document.getElementById('action-btn');
             const placeholderNode = document.getElementById('placeholder-node');
             const predictionTextNode = document.getElementById('prediction-text-node');
 
-            actionBtn.innerText = "Initiating Ritual...";
+            actionBtn.innerText = "Waiting for payment...";
             actionBtn.disabled = true;
-            artContainer.classList.add('overdrive');
-            
-            placeholderNode.style.display = 'none';
-            predictionTextNode.style.display = 'none';
-            predictionTextNode.innerHTML = '';
 
-            setTimeout(() => {
-                artContainer.classList.remove('overdrive');
-                const randomText = predictions[Math.floor(Math.random() * predictions.length)];
-                predictionTextNode.style.display = 'block';
-                
-                typeWriterEffect(predictionTextNode, randomText, () => {
-                    actionBtn.disabled = false;
-                    actionBtn.innerText = "Try Another Attempt";
+            try {
+                const web3Provider = new ethers.providers.Web3Provider(provider);
+                const signer = web3Provider.getSigner();
+
+                const tx = await signer.sendTransaction({
+                    to: RITUAL_RECEIVER,
+                    value: ethers.utils.parseEther(TX_AMOUNT)
                 });
-            }, 1000);
+
+                actionBtn.innerText = "Confirming...";
+                await tx.wait(); 
+
+                // ПРИ ТРАНЗАКЦИИ: Запуск анимации кота и генерация текста
+                artContainer.classList.add('overdrive');
+                placeholderNode.style.display = 'none';
+                predictionTextNode.style.display = 'none';
+                predictionTextNode.innerHTML = '';
+
+                setTimeout(() => {
+                    artContainer.classList.remove('overdrive');
+                    const randomText = predictions[Math.floor(Math.random() * predictions.length)];
+                    predictionTextNode.style.display = 'block';
+                    
+                    typeWriterEffect(predictionTextNode, randomText, () => {
+                        actionBtn.disabled = false;
+                        actionBtn.innerText = "Reveal My Prediction";
+                    });
+                }, 1000);
+
+            } catch (error) {
+                console.error("Ошибка при оплате:", error);
+                alert("Transaction rejected or failed.");
+                actionBtn.innerText = "Reveal My Prediction";
+                actionBtn.disabled = false;
+            }
         }
     </script>
 </body>
